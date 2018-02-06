@@ -1,0 +1,12 @@
+# Genius API
+genius/
+*.ini
+
+# Data
+Lyrics/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
