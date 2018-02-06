@@ -4,6 +4,7 @@ genius/
 
 # Data
 Lyrics/
+*.json
 
 # Jupyter
 .ipynb_checkpoints/
