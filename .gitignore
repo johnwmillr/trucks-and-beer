@@ -6,6 +6,10 @@ genius/
 Lyrics/
 *.json
 
+# Media
+*.png
+*.jpg
+
 # Jupyter
 .ipynb_checkpoints/
 
