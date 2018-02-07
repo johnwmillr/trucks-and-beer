@@ -11,3 +11,10 @@ Some pertinent questions:
   - Of the fifty artists, whose language is most unique? Whose is most generic?
 
 Should be a fun project!
+
+---
+### Visualizations
+Here's a preliminary plot to get the ball rolling...
+![beer_and_trucks](beer_and_trucks.png)
+
+Each point on the plot represents one of the top fifty country artists from Billboard's 2017 list. The values for each point were calculated as a simple percentage of times the given artist mentions a particular term. For example, Cole Swindell	had 46 total songs and mentioned beer in 24 of them, arriving at a mention percentage of 52%.
