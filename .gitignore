@@ -3,10 +3,11 @@ genius/
 *.ini
 
 # Data
-Lyrics/
+lyrics/
 *.json
 
 # Media
+figures
 *.png
 *.jpg
 
