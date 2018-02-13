@@ -4,50 +4,50 @@ from bs4 import BeautifulSoup
 from difflib import SequenceMatcher as sm # For comparing similarity of lyrics
 import requests
 import json
-import nltkimport time
+import time
 import genius as genius_api
 genius = genius_api.Genius()
 
-def downloadLyrics(artist_names, artists_gender=None, filename="artist_lyrics"):
+
+artist_lyrics = {'artists': []}
+
+def downloadLyrics(artist_names, max_songs=None, artists_gender=None, filename="artist_lyrics"):
     # Use the Genius API to get each artist's lyrics
     found_artists = {}
-    artist_lyrics = {}
-
+    
     start = time.time()
-    print("\n******* {} *******".format(year))    
-    artist_lyrics = {'artists': []}
     for n, name in enumerate(artist_names):
         print("\n--------")
-        try:        
-            if name not in found_artists:
-                artist = genius.search_artist(name)
-                artist_lyrics['artists'].append({})
-                artist_lyrics['artists'][-1]['artist'] = artist.name                            
-                artist_lyrics['artists'][-1]['songs'] = []            
-                artist_lyrics['artists'][-1]['gender'] = artists_gender # If you know all genders in list are same
-                for song in artist.songs:
-                    if not songInArtist(song): # This takes way too long! It's basically O(n^2), can I do better?
-                        artist_lyrics['artists'][-1]['songs'].append({})
-                        artist_lyrics['artists'][-1]['songs'][-1]['title'] = song.title
-                        artist_lyrics['artists'][-1]['songs'][-1]['album'] = song.album
-                        artist_lyrics['artists'][-1]['songs'][-1]['year'] = song.year
-                        artist_lyrics['artists'][-1]['songs'][-1]['lyrics'] = song.lyrics                
-                        artist_lyrics['artists'][-1]['songs'][-1]['image'] = song.song_art_image_url
-                        artist_lyrics['artists'][-1]['songs'][-1]['artist'] = name
-                        artist_lyrics['artists'][-1]['songs'][-1]['json'] = song._body
-                    else:
-                        print("SKIPPING \"{}\", already found in artist collection.".format(song.title))
-                found_artists[name] = (name, year, len(artist_lyrics['artists'])-1)
-            else:
-                # Store reference to artist location in dict, if artist previously found
-                artist_lyrics['artists'][-1] = found_artists[name]
-        except Exception as e:
-            print(e)
-            print('Skipping "{}" due to error.'.format(name))
+        # try:        
+        if name not in found_artists:
+            artist = genius.search_artist(name, max_songs=max_songs)
+            artist_lyrics['artists'].append({})
+            artist_lyrics['artists'][-1]['artist'] = artist.name                            
+            artist_lyrics['artists'][-1]['songs'] = []            
+            artist_lyrics['artists'][-1]['gender'] = artists_gender # If you know all genders in list are same
+            for song in artist.songs:
+                if not songInArtist(song): # This takes way too long! It's basically O(n^2), can I do better?
+                    artist_lyrics['artists'][-1]['songs'].append({})
+                    artist_lyrics['artists'][-1]['songs'][-1]['title'] = song.title
+                    artist_lyrics['artists'][-1]['songs'][-1]['album'] = song.album
+                    artist_lyrics['artists'][-1]['songs'][-1]['year'] = song.year
+                    artist_lyrics['artists'][-1]['songs'][-1]['lyrics'] = song.lyrics                
+                    artist_lyrics['artists'][-1]['songs'][-1]['image'] = song.song_art_image_url
+                    artist_lyrics['artists'][-1]['songs'][-1]['artist'] = name
+                    artist_lyrics['artists'][-1]['songs'][-1]['json'] = song._body
+                else:
+                    print("SKIPPING \"{}\", already found in artist collection.".format(song.title))
+            found_artists[name] = (name, len(artist_lyrics['artists'])-1)
+        else:
+            # Store reference to artist location in dict, if artist previously found
+            artist_lyrics['artists'][-1] = found_artists[name]
+        # except Exception as e:
+            # print(e)
+            # print('Skipping "{}" due to error.'.format(name))
 
         # Every other artist write the JSON object to disk as a backup
         if n % 2 == 0:
-            with open(filename + '_temp_' '.json', 'w') as outfile:
+            with open(filename + '_temp' '.json', 'w') as outfile:
                 json.dump(artist_lyrics, outfile)
             
     # Final write of the JSON object
@@ -95,6 +95,23 @@ def songInArtist(new_song):
             return True
     return False
 
+
+def main():
+
+    # Get the Billboard Top 50 country artists each year since 2006
+    if 0:
+        top_artists_by_year = {}
+        for year in range(2006,2018):    
+            url = "https://www.billboard.com/charts/year-end/{}/top-country-artists".format(year)
+            top_artists_by_year[year] = getArtistsFromList(url)
+
+    artist_names = ['Johnny Cash','Hank Williams']
+
+    downloadLyrics(artist_names, max_songs=3)
+
+
+if __name__ == '__main__':
+    main()
     
 
 
