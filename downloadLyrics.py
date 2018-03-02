@@ -1,61 +1,19 @@
 from urllib.request import Request, urlopen, quote # Python 3
-# from urllib2 import Request, urlopen, quote # Python 2    
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher as sm # For comparing similarity of lyrics
 import requests
 import json
+import os
+
 import time
-import genius as genius_api
-genius = genius_api.Genius()
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 
-
-artist_lyrics = {'artists': []}
-
-def downloadLyrics(artist_names, max_songs=None, artists_gender=None, filename="artist_lyrics"):
-    # Use the Genius API to get each artist's lyrics
-    found_artists = {}
-    
-    start = time.time()
-    for n, name in enumerate(artist_names):
-        print("\n--------")
-        # try:        
-        if name not in found_artists:
-            artist = genius.search_artist(name, max_songs=max_songs)
-            artist_lyrics['artists'].append({})
-            artist_lyrics['artists'][-1]['artist'] = artist.name                            
-            artist_lyrics['artists'][-1]['songs'] = []            
-            artist_lyrics['artists'][-1]['gender'] = artists_gender # If you know all genders in list are same
-            for song in artist.songs:
-                if not songInArtist(song): # This takes way too long! It's basically O(n^2), can I do better?
-                    artist_lyrics['artists'][-1]['songs'].append({})
-                    artist_lyrics['artists'][-1]['songs'][-1]['title'] = song.title
-                    artist_lyrics['artists'][-1]['songs'][-1]['album'] = song.album
-                    artist_lyrics['artists'][-1]['songs'][-1]['year'] = song.year
-                    artist_lyrics['artists'][-1]['songs'][-1]['lyrics'] = song.lyrics                
-                    artist_lyrics['artists'][-1]['songs'][-1]['image'] = song.song_art_image_url
-                    artist_lyrics['artists'][-1]['songs'][-1]['artist'] = name
-                    artist_lyrics['artists'][-1]['songs'][-1]['json'] = song._body
-                else:
-                    print("SKIPPING \"{}\", already found in artist collection.".format(song.title))
-            found_artists[name] = (name, len(artist_lyrics['artists'])-1)
-        else:
-            # Store reference to artist location in dict, if artist previously found
-            artist_lyrics['artists'][-1] = found_artists[name]
-        # except Exception as e:
-            # print(e)
-            # print('Skipping "{}" due to error.'.format(name))
-
-        # Every other artist write the JSON object to disk as a backup
-        if n % 2 == 0:
-            with open(filename + '_temp' '.json', 'w') as outfile:
-                json.dump(artist_lyrics, outfile)
-            
-    # Final write of the JSON object
-    with open(filename + '.json', 'w') as outfile:
-        json.dump(artist_lyrics, outfile)
-        
-    end = time.time()
-    print("Time elapsed: {} hours".format((end-start)/60.0/60.0))
+# Import client access token from environment variable
+import lyricsgenius.lyricsgenius as genius
+client_access_token = os.environ.get("GENIUS_CLIENT_ACCESS_TOKEN", None)
+assert client_access_token is not None, "Must declare environment variable: GENIUS_CLIENT_ACCESS_TOKEN"
+api = genius.Genius(client_access_token)
 
 def getArtistsFromList(URL):    
     # URL is a Billboard top list,
@@ -74,8 +32,7 @@ def getListFromRanker(URL):
     for href in h:
         try:
             name = href.find('a').contents[0]
-            if len(name.split()) == 2:
-                names.append(name)
+            names.append(name)
         except:
             pass
     return names
@@ -95,24 +52,40 @@ def songInArtist(new_song):
             return True
     return False
 
+def getListFromRanker_Selenium(url):
+    # https://stackoverflow.com/questions/21006940/how-to-load-all-entries-in-an-infinite-scroll-at-once-to-parse-the-html-in-pytho    
+    browser = webdriver.Chrome()
+
+    browser.get("https://www.ranker.com/crowdranked-list/the-greatest-rappers-of-all-time")
+    time.sleep(1)
+
+    elem = browser.find_element_by_tag_name("body")
+
+    no_of_pagedowns = 20
+
+    while no_of_pagedowns:
+        elem.send_keys(Keys.PAGE_DOWN)
+        time.sleep(0.2)
+        no_of_pagedowns-=1
+
+    post_elems = browser.find_elements_by_class_name("listItem__data")
+    artist_names = [p.find_element_by_class_name("listItem__title").text for p in post_elems[:-1]]
+    browser.quit()
+    return artist_names
+
+def downloadLyrics(artist_names, max_songs=None):
+    artist_objects = [api.search_artist(name, max_songs=max_songs, take_first_result=True) for name in artist_names]
+    api.save_artists(artist_objects, overwrite=True)
 
 def main():
 
-    # Get the Billboard Top 50 country artists each year since 2006
-    if 0:
-        top_artists_by_year = {}
-        for year in range(2006,2018):    
-            url = "https://www.billboard.com/charts/year-end/{}/top-country-artists".format(year)
-            top_artists_by_year[year] = getArtistsFromList(url)
-
-    artist_names = ['Johnny Cash','Hank Williams']
-
-    downloadLyrics(artist_names, max_songs=3)
-
+    url = "https://www.ranker.com/crowdranked-list/the-greatest-rappers-of-all-time"
+    # artist_names = getListFromRanker(url)
+    artist_names = getListFromRanker_Selenium(url)
+    print(artist_names)
+    downloadLyrics(artist_names[:2], max_songs=1)
 
 if __name__ == '__main__':
     main()
     
-
-
 
