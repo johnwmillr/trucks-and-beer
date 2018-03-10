@@ -11,6 +11,9 @@ figures
 *.png
 *.jpg
 
+# Misc
+notes.md
+
 # Jupyter
 .ipynb_checkpoints/
 
