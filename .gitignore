@@ -13,6 +13,8 @@ figures
 
 # Misc
 notes.md
+*.txt
+.cache-johnwmillr
 
 # Jupyter
 .ipynb_checkpoints/
